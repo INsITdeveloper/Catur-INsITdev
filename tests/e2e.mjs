@@ -260,6 +260,41 @@ async function main() {
     a.close();
     b2.close();
 
+    const host = new Client('host-opsi');
+    await host.open(`${WS_BASE}/ws`);
+    host.send({
+        type: 'CREATE_ROOM',
+        playerId: 'host_opsi_0001',
+        profile: profile('Host', 'a03'),
+        timeControlId: '5+0',
+        hostColor: 'w',
+        hints: 'manual'
+    });
+    const created = await host.wait('ROOM_CREATED');
+    const optRoom = created.roomCode;
+    const optClient = new Client('host-opsi-room');
+    await optClient.open(`${WS_BASE}/ws?room=${optRoom}`);
+    optClient.send({ type: 'RESUME', playerId: 'host_opsi_0001', token: created.token });
+    await optClient.wait('READY');
+    const optState = await waitForState(optClient, (s) => s.room.options.hints === 'manual');
+    check('mode bantuan tersimpan dari pembuatan room', optState.room.options.hints === 'manual', `hints=${optState.room.options.hints}`);
+    check('kontrol waktu host tersimpan', optState.room.options.timeControlId === '5+0');
+
+    optClient.send({ type: 'SET_OPTIONS', timeControlId: '5+0', hostColor: 'w', hints: 'dots' });
+    const afterOpt = await waitForState(optClient, (s) => s.room.options.hints === 'dots');
+    check('host bisa mengubah mode bantuan', afterOpt.room.options.hints === 'dots', `hints=${afterOpt.room.options.hints}`);
+
+    optClient.send({ type: 'SET_OPTIONS', timeControlId: '5+0', hostColor: 'w', hints: 'ngawur' });
+    const junkOpt = await waitForState(optClient, (s) => s.room.options.hints === 'dots');
+    check('nilai mode bantuan ngawur ditolak ke bawaan', junkOpt.room.options.hints === 'dots', `hints=${junkOpt.room.options.hints}`);
+
+    host.close();
+    optClient.close();
+
+    const cssRes = await fetch(`${BASE}/style.css`);
+    const cc = cssRes.headers.get('cache-control') || '';
+    check('CSS tidak di-cache agar perbaikan langsung terlihat', /no-cache|must-revalidate/.test(cc), cc);
+
     console.log(failed === 0 ? '\nSEMUA TES END-TO-END LULUS' : `\n${failed} TES GAGAL`);
     process.exit(failed === 0 ? 0 : 1);
 }

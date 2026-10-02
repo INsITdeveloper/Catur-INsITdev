@@ -1,0 +1,26 @@
+/index.html
+  Cache-Control: no-cache, must-revalidate
+
+/
+  Cache-Control: no-cache, must-revalidate
+
+/style.css
+  Cache-Control: no-cache, must-revalidate
+
+/app.js
+  Cache-Control: no-cache, must-revalidate
+
+/board.js
+  Cache-Control: no-cache, must-revalidate
+
+/voice.js
+  Cache-Control: no-cache, must-revalidate
+
+/rules.js
+  Cache-Control: no-cache, must-revalidate
+
+/assets/pieces/*
+  Cache-Control: public, max-age=604800
+
+/assets/avatars/*
+  Cache-Control: public, max-age=604800

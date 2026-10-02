@@ -107,6 +107,10 @@ function sanitizeHostColor(raw) {
     return raw === 'w' || raw === 'b' ? raw : 'random';
 }
 
+function sanitizeHints(raw) {
+    return raw === 'manual' ? 'manual' : 'dots';
+}
+
 function reasonText(reason, winnerName, loserName) {
     switch (reason) {
         case 'checkmate': return `${winnerName} menang dengan skakmat.`;
@@ -281,7 +285,8 @@ export class LobbyDO {
             const profile = sanitizeProfile(message.profile);
             const options = {
                 timeControlId: sanitizeTimeControl(message.timeControlId),
-                hostColor: sanitizeHostColor(message.hostColor)
+                hostColor: sanitizeHostColor(message.hostColor),
+                hints: sanitizeHints(message.hints)
             };
             const result = await this.allocateRoom([{ playerId, profile, host: true }], options);
             this.send(ws, {
@@ -486,7 +491,8 @@ export class RoomDO {
             phase: 'lobby',
             options: {
                 timeControlId,
-                hostColor: sanitizeHostColor(options.hostColor)
+                hostColor: sanitizeHostColor(options.hostColor),
+                hints: sanitizeHints(options.hints)
             },
             members,
             game: null,
@@ -1004,6 +1010,7 @@ export class RoomDO {
                 }
                 room.options.timeControlId = sanitizeTimeControl(message.timeControlId);
                 room.options.hostColor = sanitizeHostColor(message.hostColor);
+                room.options.hints = sanitizeHints(message.hints);
                 await this.persist();
                 this.broadcastState();
                 return;
@@ -1401,6 +1408,13 @@ export default {
             }, { headers: { 'Cache-Control': 'no-store' } });
         }
 
-        return env.ASSETS.fetch(request);
+        const asset = await env.ASSETS.fetch(request);
+        const type = asset.headers.get('Content-Type') || '';
+        if (/text\/html|text\/css|javascript/.test(type)) {
+            const headers = new Headers(asset.headers);
+            headers.set('Cache-Control', 'no-cache, must-revalidate');
+            return new Response(asset.body, { status: asset.status, headers });
+        }
+        return asset;
     }
 };

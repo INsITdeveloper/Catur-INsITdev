@@ -167,7 +167,15 @@
                                     <option value="b">Hitam</option>
                                 </select>
                             </label>
+                            <label class="field">
+                                <span>Bantuan langkah</span>
+                                <select id="hintSelect">
+                                    <option value="dots">Titik bantu</option>
+                                    <option value="manual">Manual</option>
+                                </select>
+                            </label>
                         </div>
+                        <p class="tiny" id="hintHelp">Titik bantu menandai petak yang bisa dituju bidak terpilih. Mode manual menyembunyikannya sama sekali.</p>
                         <div class="row-tight">
                             <button class="ghost" id="addBotBtn">+ Tambah bot</button>
                             <button class="primary" id="startGameBtn">Mulai permainan</button>
@@ -227,6 +235,23 @@
                 </div>
 
                 <div class="side-column">
+                    <div class="card tight status-card">
+                        <h3>Meja</h3>
+                        <div class="status-grid">
+                            <div class="status-item">
+                                <span class="tiny">Kode room</span>
+                                <strong class="code-chip" id="gameRoomCode">------</strong>
+                            </div>
+                            <div class="status-item">
+                                <span class="tiny">Giliran</span>
+                                <strong id="gameTurn">&mdash;</strong>
+                            </div>
+                            <div class="status-item">
+                                <span class="tiny">Bantuan langkah</span>
+                                <strong id="gameHintMode">Titik bantu</strong>
+                            </div>
+                        </div>
+                    </div>
                     <div class="card tight">
                         <h3>Riwayat langkah</h3>
                         <div class="move-list" id="moveList"></div>

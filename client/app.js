@@ -73,6 +73,11 @@ const el = {
     hostPanel: $('hostPanel'),
     tcSelect: $('tcSelect'),
     colorSelect: $('colorSelect'),
+    hintSelect: $('hintSelect'),
+    hintHelp: $('hintHelp'),
+    gameRoomCode: $('gameRoomCode'),
+    gameTurn: $('gameTurn'),
+    gameHintMode: $('gameHintMode'),
     addBotBtn: $('addBotBtn'),
     startGameBtn: $('startGameBtn'),
     guestHint: $('guestHint'),
@@ -334,7 +339,10 @@ function attachSocket(ws) {
 }
 
 function send(payload) {
-    if (!app.socket || app.socket.readyState !== WebSocket.OPEN) return false;
+    if (!app.socket || app.socket.readyState !== WebSocket.OPEN) {
+        if (payload.type !== 'PING') toast('Belum tersambung ke server. Coba lagi sebentar.', 'err');
+        return false;
+    }
     app.socket.send(JSON.stringify(payload));
     return true;
 }
@@ -629,6 +637,10 @@ function renderLobby() {
     if (isHost) {
         el.tcSelect.value = room.options.timeControlId;
         el.colorSelect.value = room.options.hostColor;
+        el.hintSelect.value = room.options.hints === 'manual' ? 'manual' : 'dots';
+        el.hintHelp.textContent = el.hintSelect.value === 'manual'
+            ? 'Mode manual: petak tujuan tidak ditandai. Kamu harus mengingat sendiri langkah bidaknya.'
+            : 'Titik bantu menandai petak yang bisa dituju bidak terpilih.';
         const players = room.members.filter((m) => m.role === 'player');
         const ready = players.length >= 2 && players.every((p) => p.connected || p.isBot);
         el.startGameBtn.disabled = !ready;
@@ -803,8 +815,11 @@ function renderGame() {
         interactive: canMove
     });
 
-    el.drawBtn.disabled = !myTurn;
-    el.resignBtn.disabled = !(game && !game.over && app.myRole === 'player');
+    const canAct = Boolean(game && !game.over && app.myRole === 'player');
+    el.drawBtn.disabled = !(canAct && !game.drawOfferBy);
+    el.resignBtn.disabled = !canAct;
+    el.drawBtn.title = canAct ? 'Tawarkan seri kapan saja' : 'Hanya pemain yang bisa menawar seri';
+    el.resignBtn.title = canAct ? 'Menyerah' : 'Hanya pemain yang bisa menyerah';
     el.rematchBtn.hidden = !(game && game.over && app.myRole === 'player');
     el.backLobbyBtn.hidden = !(room.hostId === app.myId && game && game.over);
 
@@ -823,9 +838,19 @@ function renderGame() {
         el.drawOfferBar.hidden = true;
     }
 
+    el.gameRoomCode.textContent = room.code;
+    el.gameTurn.textContent = game.over
+        ? 'Permainan selesai'
+        : (game.turn === 'w' ? 'Putih' : 'Hitam') + (myTurn ? ' (kamu)' : '');
+    el.gameHintMode.textContent = hintMode() === 'manual' ? 'Manual' : 'Titik bantu';
+
     renderClocks();
     renderVoice();
     if (!clockTimer) clockTimer = setInterval(renderClocks, 250);
+}
+
+function hintMode() {
+    return app.room && app.room.options && app.room.options.hints === 'manual' ? 'manual' : 'dots';
 }
 
 function renderVoice() {
@@ -922,21 +947,31 @@ function handleSelect(index) {
         return;
     }
     const piece = game.board[index];
-    if (piece) {
-        const color = piece === piece.toUpperCase() ? 'w' : 'b';
-        if (color === app.myColor) {
-            app.selected = app.selected === index ? null : index;
-            app.hints = new Set();
-            if (app.selected !== null) {
-                const state = createState(game.fen);
-                for (const move of legalMoves(state, index)) app.hints.add(move.to);
-            }
-            renderGame();
+    const color = piece ? (piece === piece.toUpperCase() ? 'w' : 'b') : null;
+
+    if (app.selected !== null && app.selected !== index) {
+        const state = createState(game.fen);
+        if (legalMoves(state, app.selected).some((m) => m.to === index)) {
+            attemptMove(app.selected, index);
             return;
         }
     }
-    if (app.selected !== null && app.hints.has(index)) {
-        attemptMove(app.selected, index);
+
+    if (piece && color === app.myColor) {
+        app.selected = app.selected === index ? null : index;
+        app.hints = new Set();
+        if (app.selected !== null && hintMode() === 'dots') {
+            const state = createState(game.fen);
+            for (const move of legalMoves(state, index)) app.hints.add(move.to);
+        }
+        renderGame();
+        return;
+    }
+
+    if (app.selected !== null) {
+        app.selected = null;
+        app.hints = new Set();
+        renderGame();
     }
 }
 
@@ -1155,7 +1190,8 @@ function bindEvents() {
                     playerId: app.playerId,
                     profile: app.profile,
                     timeControlId: el.homeTimeControl.value,
-                    hostColor: el.homeColor.value
+                    hostColor: el.homeColor.value,
+                    hints: 'dots'
                 });
             }
         }, 60);
@@ -1179,7 +1215,8 @@ function bindEvents() {
                     playerId: app.playerId,
                     profile: app.profile,
                     timeControlId: el.homeTimeControl.value,
-                    hostColor: el.homeColor.value
+                    hostColor: el.homeColor.value,
+                    hints: 'dots'
                 });
             }
         }, 60);
@@ -1197,7 +1234,8 @@ function bindEvents() {
                     playerId: app.playerId,
                     profile: app.profile,
                     timeControlId: el.homeTimeControl.value,
-                    hostColor: el.homeColor.value
+                    hostColor: el.homeColor.value,
+                    hints: 'dots'
                 });
             }
         }, 60);
@@ -1248,16 +1286,20 @@ function bindEvents() {
         toast('Tautan disalin.', 'ok');
     });
 
-    el.tcSelect.addEventListener('change', () => send({
+    const pushOptions = () => send({
         type: 'SET_OPTIONS',
         timeControlId: el.tcSelect.value,
-        hostColor: el.colorSelect.value
-    }));
-    el.colorSelect.addEventListener('change', () => send({
-        type: 'SET_OPTIONS',
-        timeControlId: el.tcSelect.value,
-        hostColor: el.colorSelect.value
-    }));
+        hostColor: el.colorSelect.value,
+        hints: el.hintSelect.value
+    });
+    el.tcSelect.addEventListener('change', pushOptions);
+    el.colorSelect.addEventListener('change', pushOptions);
+    el.hintSelect.addEventListener('change', () => {
+        el.hintHelp.textContent = el.hintSelect.value === 'manual'
+            ? 'Mode manual: petak tujuan tidak ditandai. Kamu harus mengingat sendiri langkah bidaknya.'
+            : 'Titik bantu menandai petak yang bisa dituju bidak terpilih.';
+        pushOptions();
+    });
     el.addBotBtn.addEventListener('click', () => send({ type: 'ADD_BOT' }));
     el.startGameBtn.addEventListener('click', () => send({ type: 'START_GAME' }));
     el.leaveLobbyBtn.addEventListener('click', async () => {
