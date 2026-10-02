@@ -1,3 +1,7 @@
+[hidden] {
+    display: none !important;
+}
+
 :root {
     --bg: #0f1317;
     --bg-soft: #161c22;
