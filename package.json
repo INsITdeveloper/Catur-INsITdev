@@ -14,6 +14,6 @@
     "assets": "python3 tools/generate_pieces.py && python3 tools/generate_avatars.py"
   },
   "devDependencies": {
-    "wrangler": "^3.90.0"
+    "wrangler": "^4.147.0"
   }
 }

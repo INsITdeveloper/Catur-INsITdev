@@ -1,4 +1,4 @@
-name = "catur-online"
+name = "catur-insitdev"
 main = "server/index.js"
 compatibility_date = "2024-11-01"
 
