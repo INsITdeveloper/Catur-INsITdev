@@ -1,0 +1,19 @@
+{
+  "avatars": [
+    "a01.svg",
+    "a02.svg",
+    "a03.svg",
+    "a04.svg",
+    "a05.svg",
+    "a06.svg",
+    "a07.svg",
+    "a08.svg",
+    "a09.svg",
+    "a10.svg",
+    "a11.svg",
+    "a12.svg",
+    "a13.svg",
+    "a14.svg"
+  ],
+  "fallback": "fallback.svg"
+}
