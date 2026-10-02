@@ -6,6 +6,8 @@ apa pun.
 
 Ini penerus dari project Uno-game lama. Sistemnya dibangun ulang, bukan ditempel.
 
+**Sudah jalan di:** https://catur-insitdev.officialrealmuoriginal.workers.dev
+
 ![papan permainan](docs/preview-game.png)
 
 ## Yang bisa dilakukan
