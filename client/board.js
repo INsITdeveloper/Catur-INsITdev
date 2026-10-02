@@ -179,7 +179,12 @@ export class BoardView {
 
         const up = (event) => {
             if (!this.drag) {
+                const pending = this.pendingClick;
                 this.pendingClick = null;
+                if (pending) {
+                    const index = this.squareFromPoint(event.clientX, event.clientY);
+                    this.handlers.onSelect(index >= 0 ? index : pending.index);
+                }
                 return;
             }
             const dragged = this.drag;

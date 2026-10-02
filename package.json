@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "test": "node tests/perft.mjs && node tests/bot.mjs",
+    "test": "node tests/perft.mjs && node tests/bot.mjs && node tests/board.mjs",
     "test:e2e": "node tests/e2e.mjs",
     "pieces": "python3 tools/generate_pieces.py",
     "avatars": "python3 tools/generate_avatars.py",
